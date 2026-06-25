@@ -1,0 +1,119 @@
+{% extends 'core/base.html' %}
+
+{% block header_title %}Network Intelligence Map{% endblock %}
+
+{% block extra_head %}
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+    #network-container {
+        height: 700px;
+        background-color: #080c10;
+        border-radius: 1rem;
+        border: 1px solid #1e2a38;
+    }
+    .toolbar-btn {
+        background: #1e2a38;
+        color: #94a3b8;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        transition: all 0.2s;
+    }
+    .toolbar-btn:hover {
+        background: #2d3d50;
+        color: #fff;
+    }
+    .toolbar-btn.active {
+        background: #0ea5e9;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="flex justify-between items-center bg-cyber-card p-4 rounded-xl border border-cyber-border">
+        <div class="flex space-x-2">
+            <button onclick="zoomIn()" class="toolbar-btn">Zoom In</button>
+            <button onclick="zoomOut()" class="toolbar-btn">Zoom Out</button>
+            <button onclick="fitNetwork()" class="toolbar-btn">Fit View</button>
+            <div class="w-px h-6 bg-cyber-border mx-2"></div>
+            <button id="physics-toggle" onclick="togglePhysics()" class="toolbar-btn active">Live Physics</button>
+        </div>
+        <div class="text-xs text-slate-500 font-mono">
+            Nodes: <span id="node-count">0</span> | Edges: <span id="edge-count">0</span>
+        </div>
+    </div>
+
+    <div id="network-container"></div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div class="cyber-card p-6 rounded-xl">
+            <h4 class="text-sm font-bold text-cyber-accent-green mb-4">Legend</h4>
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-[#00e5a0] rotate-45"></div>
+                    <span class="text-xs">Prescriber</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-[#0ea5e9] rounded-full"></div>
+                    <span class="text-xs">Patient (RAMA)</span>
+                </div>
+            </div>
+        </div>
+        <div class="cyber-card p-6 rounded-xl">
+            <h4 class="text-sm font-bold text-slate-400 mb-2">Graph Insight</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Large diamonds represent high-volume prescribers. Thicker lines indicate frequent revisits by the same patient to that specific doctor.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const nodes = new vis.DataSet({{ network_data.nodes|safe }});
+    const edges = new vis.DataSet({{ network_data.edges|safe }});
+
+    const container = document.getElementById('network-container');
+    const data = { nodes: nodes, edges: edges };
+
+    const options = {
+        nodes: {
+            font: { color: '#e2e8f0', size: 10, face: 'monospace' },
+            borderWidth: 2,
+        },
+        edges: {
+            width: 2,
+            smooth: { type: 'continuous' }
+        },
+        physics: {
+            enabled: true,
+            barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 95 },
+            stabilization: { iterations: 150 }
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 200,
+            zoomView: true
+        }
+    };
+
+    const network = new vis.Network(container, data, options);
+
+    document.getElementById('node-count').innerText = nodes.length;
+    document.getElementById('edge-count').innerText = edges.length;
+
+    let physicsEnabled = true;
+    function togglePhysics() {
+        physicsEnabled = !physicsEnabled;
+        network.setOptions({ physics: { enabled: physicsEnabled } });
+        const btn = document.getElementById('physics-toggle');
+        btn.classList.toggle('active');
+        btn.innerText = physicsEnabled ? 'Live Physics' : 'Physics Frozen';
+    }
+
+    function zoomIn() { network.moveTo({ scale: network.getScale() * 1.5 }); }
+    function zoomOut() { network.moveTo({ scale: network.getScale() * 0.7 }); }
+    function fitNetwork() { network.fit(); }
+</script>
+{% endblock %}
