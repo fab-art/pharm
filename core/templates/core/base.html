@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PharmaScan Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cyber-bg': '#080c10',
+                        'cyber-card': '#0d1117',
+                        'cyber-border': '#1e2a38',
+                        'cyber-accent-green': '#00e5a0',
+                        'cyber-accent-blue': '#0ea5e9',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/css">
+        body {
+            background-color: #080c10;
+            color: #e2e8f0;
+        }
+        .cyber-sidebar {
+            background-color: #0d1117;
+            border-right: 1px solid #1e2a38;
+        }
+        .cyber-card {
+            background-color: #0d1117;
+            border: 1px solid #1e2a38;
+        }
+        .accent-text-green { color: #00e5a0; }
+        .accent-text-blue { color: #0ea5e9; }
+        .accent-border-green { border-color: #00e5a0; }
+        .accent-border-blue { border-color: #0ea5e9; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex">
+
+    <!-- Sidebar -->
+    <aside class="w-64 cyber-sidebar fixed h-full hidden md:block">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold accent-text-green mb-8">PharmaScan</h1>
+            <nav class="space-y-4">
+                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition accent-text-blue">Dashboard</a>
+                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Analytics</a>
+                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Reports</a>
+                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Settings</a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 md:ml-64 p-8">
+        <header class="flex justify-between items-center mb-8">
+            <h2 class="text-xl font-semibold">{% block header_title %}Overview{% endblock %}</h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-slate-400">Welcome, User</span>
+                <div class="w-10 h-10 rounded-full bg-cyber-accent-blue flex items-center justify-center text-white font-bold">
+                    U
+                </div>
+            </div>
+        </header>
+
+        <section>
+            {% block content %}
+            <!-- Default Content -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="cyber-card p-6 rounded-xl">
+                    <h3 class="text-slate-400 text-sm mb-2">Total Scans</h3>
+                    <p class="text-3xl font-bold accent-text-green">1,284</p>
+                </div>
+                <div class="cyber-card p-6 rounded-xl">
+                    <h3 class="text-slate-400 text-sm mb-2">Active Alerts</h3>
+                    <p class="text-3xl font-bold accent-text-blue">12</p>
+                </div>
+                <div class="cyber-card p-6 rounded-xl">
+                    <h3 class="text-slate-400 text-sm mb-2">System Status</h3>
+                    <p class="text-3xl font-bold text-white">Online</p>
+                </div>
+            </div>
+            {% endblock %}
+        </section>
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
