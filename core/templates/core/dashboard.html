@@ -1,0 +1,111 @@
+{% extends 'core/base.html' %}
+
+{% block header_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- KPI Row -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="cyber-card p-6 rounded-2xl">
+            <h4 class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Total Records</h4>
+            <p class="text-3xl font-bold">{{ total_rows|default:0 }}</p>
+        </div>
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-cyber-accent-green">
+            <h4 class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Unique Patients</h4>
+            <p class="text-3xl font-bold accent-text-green">{{ stats.unique_patients|default:0 }}</p>
+        </div>
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-cyber-accent-blue">
+            <h4 class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Prescribers</h4>
+            <p class="text-3xl font-bold accent-text-blue">{{ stats.unique_doctors|default:0 }}</p>
+        </div>
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-orange-500">
+            <h4 class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Rapid Revisits</h4>
+            <p class="text-3xl font-bold text-orange-500">{{ rapid|length }}</p>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="cyber-card p-6 rounded-2xl overflow-hidden">
+            <h3 class="text-lg font-bold mb-4">Volume Over Time</h3>
+            {% if charts.timeseries %}
+                <img src="data:image/png;base64,{{ charts.timeseries }}" class="w-full h-auto">
+            {% else %}
+                <div class="h-48 flex items-center justify-center text-slate-600 italic">Insufficient date data</div>
+            {% endif %}
+        </div>
+        <div class="cyber-card p-6 rounded-2xl overflow-hidden">
+            <h3 class="text-lg font-bold mb-4">Revisit Distribution</h3>
+            {% if charts.rapid_hist %}
+                <img src="data:image/png;base64,{{ charts.rapid_hist }}" class="w-full h-auto">
+            {% else %}
+                <div class="h-48 flex items-center justify-center text-slate-600 italic">No revisits detected</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top Lists -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="cyber-card p-6 rounded-2xl">
+            <h3 class="text-lg font-bold mb-4 accent-text-green">Top Repeat Patients</h3>
+            {% if charts.patients %}
+                <img src="data:image/png;base64,{{ charts.patients }}" class="w-full h-auto">
+            {% else %}
+                <p class="text-slate-500 italic text-sm">No patient data available</p>
+            {% endif %}
+        </div>
+        <div class="cyber-card p-6 rounded-2xl">
+            <h3 class="text-lg font-bold mb-4 accent-text-blue">Top Prescribers</h3>
+            {% if charts.doctors %}
+                <img src="data:image/png;base64,{{ charts.doctors }}" class="w-full h-auto">
+            {% else %}
+                <p class="text-slate-500 italic text-sm">No prescriber data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Rapid Revisit Table -->
+    <div class="cyber-card p-8 rounded-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-orange-500">Rapid Revisit Alerts</h3>
+            <a href="{% url 'core:export_csv' %}" class="px-4 py-2 bg-cyber-bg border border-cyber-border rounded-lg text-xs hover:bg-cyber-border transition">
+                Export Full Prepared CSV
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="text-slate-500 border-b border-cyber-border">
+                    <tr>
+                        <th class="pb-3 px-4">Patient</th>
+                        <th class="pb-3 px-4">Visit 1</th>
+                        <th class="pb-3 px-4">Visit 2</th>
+                        <th class="pb-3 px-4">Interval</th>
+                        <th class="pb-3 px-4">Prescriber</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-cyber-border">
+                    {% for row in rapid %}
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="py-4 px-4 font-bold">{{ row.patient_name }} <span class="text-xs font-normal text-slate-500">#{{ row.patient_id }}</span></td>
+                        <td class="py-4 px-4 font-mono">{{ row.visit_1 }}</td>
+                        <td class="py-4 px-4 font-mono">{{ row.visit_2 }}</td>
+                        <td class="py-4 px-4">
+                            <span class="px-2 py-1 rounded text-xs {% if row.days_apart <= 2 %}bg-red-900/30 text-red-400 border border-red-800{% else %}bg-orange-900/30 text-orange-400 border border-orange-800{% endif %}">
+                                {{ row.days_apart }} days
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 text-slate-300">{{ row.doctor|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-8 text-center text-slate-600 italic">No rapid revisits detected.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="flex justify-center pb-8">
+        <a href="{% url 'core:clear_session' %}" class="text-red-400 text-sm hover:underline">Clear Data Lake and Start Over</a>
+    </div>
+</div>
+{% endblock %}

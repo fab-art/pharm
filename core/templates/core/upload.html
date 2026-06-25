@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+
+{% block header_title %}Data Onboarding{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="cyber-card p-8 rounded-2xl">
+        <h3 class="text-xl font-bold accent-text-green mb-6">Upload Pharmacy Vouchers</h3>
+        <p class="text-slate-400 mb-8 text-sm">
+            Upload your raw telemetry tables (CSV, XLSX, or ODS). The system will automatically detect
+            clinical fields and normalize them for analysis.
+        </p>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">{{ form.file.label }}</label>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-cyber-border rounded-xl hover:border-cyber-accent-blue transition-colors cursor-pointer group">
+                    <div class="space-y-1 text-center">
+                        <svg class="mx-auto h-12 w-12 text-slate-500 group-hover:text-cyber-accent-blue" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <div class="flex text-sm text-slate-400">
+                            {{ form.file }}
+                        </div>
+                    </div>
+                </div>
+                {% if form.file.errors %}
+                    <p class="text-red-400 text-xs">{{ form.file.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-slate-300">{{ form.rapid_days.label }}</label>
+                {{ form.rapid_days }}
+                <p class="text-xs text-slate-500 italic">Threshold for flagging multiple visits by the same patient.</p>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full bg-cyber-accent-green hover:bg-opacity-90 text-black font-bold py-3 px-4 rounded-xl transition-all transform hover:scale-[1.02]">
+                    Process and Map Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="number"] {
+        background: #0d1117;
+        border: 1px solid #1e2a38;
+        color: #e2e8f0;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        width: 100%;
+    }
+    input[type="file"]::file-selector-button {
+        background: #1e2a38;
+        color: #e2e8f0;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        margin-right: 1rem;
+    }
+</style>
+{% endblock %}
