@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block header_title %}Column Mapping — {{ filename }}{% endblock %}
+
+{% block content %}
+<div class="cyber-card p-8 rounded-2xl">
+    <div class="flex justify-between items-start mb-8">
+        <div>
+            <h3 class="text-xl font-bold accent-text-blue">Validate Mapping</h3>
+            <p class="text-slate-400 text-sm mt-1">Confirm or adjust how raw columns map to system entities.</p>
+        </div>
+        <div class="px-4 py-2 bg-cyber-border rounded-lg text-xs font-mono text-slate-300">
+            {{ filename }}
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            {% for original, target in renamed.items %}
+            <div class="flex items-center justify-between p-4 border border-cyber-border rounded-xl bg-cyber-bg">
+                <div class="flex-1 mr-4">
+                    <span class="text-xs text-slate-500 block mb-1">Raw Column</span>
+                    <span class="font-mono text-sm text-slate-200">{{ original }}</span>
+                </div>
+                <div class="text-slate-500">→</div>
+                <div class="flex-1 ml-4">
+                    <span class="text-xs text-slate-500 block mb-1">System Field</span>
+                    <input type="text" name="map_{{ original }}" value="{{ target }}"
+                           class="bg-transparent border-b border-cyber-border focus:border-cyber-accent-blue outline-none text-sm font-bold w-full text-cyber-accent-green">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-12 flex justify-end space-x-4">
+            <a href="{% url 'core:upload' %}" class="px-6 py-3 border border-cyber-border rounded-xl text-slate-400 hover:text-white transition">Back</a>
+            <button type="submit" class="px-10 py-3 bg-cyber-accent-blue text-white font-bold rounded-xl hover:bg-opacity-90 transition-all shadow-lg shadow-blue-900/20">
+                Commit to Data Lake
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
