@@ -1,7 +1,9 @@
 Watching for file changes with StatReloader
-Error: That port is already in use.
-[25/Jun/2026 09:57:42] "GET / HTTP/1.1" 200 5629
-[25/Jun/2026 09:57:45] "POST / HTTP/1.1" 302 0
-[25/Jun/2026 09:57:45] "GET /mapping/ HTTP/1.1" 200 8056
-[25/Jun/2026 09:57:47] "POST /mapping/ HTTP/1.1" 302 0
-[25/Jun/2026 09:57:48] "GET /dashboard/ HTTP/1.1" 200 43917
+[25/Jun/2026 10:58:52] "GET / HTTP/1.1" 200 6112
+[25/Jun/2026 10:58:53] "POST / HTTP/1.1" 302 0
+[25/Jun/2026 10:58:53] "GET /mapping/ HTTP/1.1" 200 9397
+[25/Jun/2026 10:58:54] "POST /mapping/ HTTP/1.1" 302 0
+[25/Jun/2026 10:58:54] "GET /dashboard/ HTTP/1.1" 200 24673
+[25/Jun/2026 10:58:56] "GET /network/ HTTP/1.1" 200 7636
+[25/Jun/2026 10:58:59] "GET /fraud/ HTTP/1.1" 200 6494
+[25/Jun/2026 10:59:01] "POST /fraud/ HTTP/1.1" 200 6494

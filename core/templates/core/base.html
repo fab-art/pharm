@@ -37,6 +37,16 @@
         .accent-text-blue { color: #0ea5e9; }
         .accent-border-green { border-color: #00e5a0; }
         .accent-border-blue { border-color: #0ea5e9; }
+        .sec-head {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #1e2a38;
+            padding-bottom: 0.5rem;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -47,10 +57,12 @@
         <div class="p-6">
             <h1 class="text-2xl font-bold accent-text-green mb-8">PharmaScan</h1>
             <nav class="space-y-4">
-                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition accent-text-blue">Dashboard</a>
-                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Analytics</a>
-                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Reports</a>
-                <a href="#" class="block px-4 py-2 rounded hover:bg-cyber-border transition">Settings</a>
+                <a href="{% url 'core:dashboard' %}" class="block px-4 py-2 rounded hover:bg-cyber-border transition {% if request.resolver_match.url_name == 'dashboard' %}accent-text-blue bg-cyber-border{% endif %}">📊 Summary</a>
+                <a href="{% url 'core:network' %}" class="block px-4 py-2 rounded hover:bg-cyber-border transition {% if request.resolver_match.url_name == 'network' %}accent-text-blue bg-cyber-border{% endif %}">🕸️ Network Graph</a>
+                <a href="{% url 'core:fraud' %}" class="block px-4 py-2 rounded hover:bg-cyber-border transition {% if request.resolver_match.url_name == 'fraud' %}accent-text-blue bg-cyber-border{% endif %}">🔍 Fraud Detection</a>
+                <div class="pt-4 border-t border-cyber-border">
+                    <a href="{% url 'core:upload' %}" class="block px-4 py-2 rounded hover:bg-cyber-border transition text-xs text-slate-500 uppercase">Onboard New Data</a>
+                </div>
             </nav>
         </div>
     </aside>
@@ -68,23 +80,7 @@
         </header>
 
         <section>
-            {% block content %}
-            <!-- Default Content -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="cyber-card p-6 rounded-xl">
-                    <h3 class="text-slate-400 text-sm mb-2">Total Scans</h3>
-                    <p class="text-3xl font-bold accent-text-green">1,284</p>
-                </div>
-                <div class="cyber-card p-6 rounded-xl">
-                    <h3 class="text-slate-400 text-sm mb-2">Active Alerts</h3>
-                    <p class="text-3xl font-bold accent-text-blue">12</p>
-                </div>
-                <div class="cyber-card p-6 rounded-xl">
-                    <h3 class="text-slate-400 text-sm mb-2">System Status</h3>
-                    <p class="text-3xl font-bold text-white">Online</p>
-                </div>
-            </div>
-            {% endblock %}
+            {% block content %}{% endblock %}
         </section>
     </main>
 

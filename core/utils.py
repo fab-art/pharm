@@ -330,3 +330,145 @@ def rapid_histogram_buf(rapid):
     )
     fig.tight_layout()
     return get_buffer(fig)
+
+import networkx as nx
+import difflib
+import math
+from collections import defaultdict as _dd
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+# ── Network Intelligence ──────────────────────────────────────────────────
+
+def build_network_data(df, col_a='doctor_name', col_b='patient_id', max_nodes=100, min_weight=1):
+    if col_a not in df.columns or col_b not in df.columns:
+        return {"nodes": [], "edges": []}
+
+    sub = df[[col_a, col_b]].dropna()
+    edge_counts = sub.groupby([col_a, col_b]).size().reset_index(name="weight")
+    edge_counts = edge_counts[edge_counts["weight"] >= min_weight]
+
+    G = nx.Graph()
+    for _, row in edge_counts.iterrows():
+        a, b, w = str(row[col_a]), str(row[col_b]), int(row["weight"])
+        G.add_node(a, side="A")
+        G.add_node(b, side="B")
+        G.add_edge(a, b, weight=w)
+
+    if len(G.nodes) > max_nodes:
+        degree_list = sorted(list(G.degree()), key=lambda x: x[1], reverse=True)
+        top_nodes = [n for n, _ in degree_list[:max_nodes]]
+        G = G.subgraph(top_nodes).copy()
+
+    degrees = dict(G.degree())
+    nodes = []
+    for n, data in G.nodes(data=True):
+        is_a = data.get("side") == "A"
+        deg = degrees.get(n, 1)
+        nodes.append({
+            "id": n,
+            "label": str(n)[:20],
+            "title": f"Connections: {deg}",
+            "color": "#00e5a0" if is_a else "#0ea5e9",
+            "shape": "diamond" if is_a else "dot",
+            "size": max(10, min(30, 10 + deg * 2))
+        })
+
+    edges = []
+    for u, v, data in G.edges(data=True):
+        edges.append({
+            "from": u,
+            "to": v,
+            "value": data.get("weight", 1),
+            "color": {"color": "#1e2a38", "highlight": "#00e5a0"}
+        })
+
+    return {"nodes": nodes, "edges": edges}
+
+# ── Fraud Detection & Fuzzy Matching ────────────────────────────────────────
+
+def _toks(name):
+    s = re.sub(r"[-_]", " ", str(name).lower())
+    return set(re.sub(r"[^a-z0-9 ]", "", s).split())
+
+def _match_score(a, b):
+    ta, tb = _toks(a), _toks(b)
+    if not ta or not tb: return 0.0
+    shorter, longer = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    if shorter <= longer: return 0.9, "subset"
+    ratio = difflib.SequenceMatcher(None, " ".join(sorted(ta)), " ".join(sorted(tb))).ratio()
+    return ratio, "fuzzy"
+
+def normalize_rama(val):
+    s = re.sub(r"[^A-Z0-9]", "", str(val).upper())
+    return s
+
+def run_match(ph_work, fac_df, name_thresh=0.4, date_window=7, require_name=True):
+    ph = ph_work.copy()
+    fac = fac_df.copy()
+    ph["_rn"] = ph["_rama"].apply(normalize_rama)
+    fac["_rn"] = fac["_rama"].apply(normalize_rama)
+
+    fac_index = _dd(list)
+    for fr in fac.to_dict("records"):
+        fac_index[fr["_rn"]].append(fr)
+
+    results = []
+    for pr in ph.to_dict("records"):
+        candidates = fac_index.get(pr["_rn"], [])
+        if not candidates:
+            results.append({**pr, "status": "NO_RECORD", "confidence": 0.0})
+            continue
+
+        best_fr, best_conf, best_ns, best_days = None, -1.0, 0.0, None
+        for fr in candidates:
+            ns, _ = _match_score(pr["_name"], fr["_name"])
+            if require_name and ns < name_thresh: continue
+
+            days = None
+            if pd.notna(pr["_date"]) and pd.notna(fr["_date"]):
+                days = (pd.Timestamp(pr["_date"]) - pd.Timestamp(fr["_date"])).days
+
+            if days is not None and -1 <= days <= date_window:
+                day_prox = 1.0 - max(days, 0) / (date_window + 1)
+                conf = round(0.4 * ns + 0.6 * day_prox, 3)
+                if conf > best_conf:
+                    best_conf, best_fr, best_ns, best_days = conf, fr, ns, days
+
+        if best_fr:
+            results.append({**pr, "status": "MATCHED", "confidence": best_conf, "fac_source": best_fr["_source"], "days_apart": best_days})
+        else:
+            results.append({**pr, "status": "UNLINKED", "confidence": 0.0})
+
+    return pd.DataFrame(results)
+
+# ── Excel Audit Export ─────────────────────────────────────────────────────
+
+def generate_excel_audit_report(results_df):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Fraud Audit"
+
+    header_fill = PatternFill(start_color="0D1117", end_color="0D1117", fill_type="solid")
+    font_white = Font(name="Calibri", size=11, color="FFFFFF", bold=True)
+
+    cols = list(results_df.columns)
+    for ci, col in enumerate(cols, 1):
+        cell = ws.cell(1, ci, col)
+        cell.fill = header_fill
+        cell.font = font_white
+        ws.column_dimensions[get_column_letter(ci)].width = 20
+
+    ws.row_dimensions[1].height = 25
+
+    for ri, row in enumerate(results_df.itertuples(index=False), 2):
+        for ci, val in enumerate(row, 1):
+            cell = ws.cell(ri, ci, str(val))
+            cell.font = Font(name="Calibri", size=10)
+        ws.row_dimensions[ri].height = 18
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf

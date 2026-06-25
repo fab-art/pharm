@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+
+{% block header_title %}Cross-Facility Fraud Detection{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="cyber-card p-8 rounded-2xl border-l-4 border-l-cyber-accent-blue bg-blue-950/10">
+        <h3 class="text-xl font-bold accent-text-blue mb-4">Patient Journey & Logic</h3>
+        <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-400">
+            <span class="bg-blue-900/30 px-3 py-2 rounded-lg border border-blue-800">🏥 Clinic Visit</span>
+            <span>→</span>
+            <span class="bg-blue-900/30 px-3 py-2 rounded-lg border border-blue-800">👨‍⚕️ Doctor consults</span>
+            <span>→</span>
+            <span class="bg-green-900/30 px-3 py-2 rounded-lg border border-green-800">💊 Pharmacy Dispenses</span>
+        </div>
+        <p class="mt-6 text-sm text-slate-500 italic">
+            <b class="text-red-400">Fraud signal:</b> Pharmacy claims reimbursement for a patient with
+            <i class="text-slate-300">no hospital/clinic visit record</i> during the same period.
+        </p>
+    </div>
+
+    <!-- Step 1: Upload Facility Files -->
+    <div class="cyber-card p-8 rounded-2xl">
+        <h4 class="text-lg font-bold mb-6">📂 Step 1 — Upload Hospital & Clinic Records</h4>
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-300">Facility Data Files</label>
+                    <input type="file" name="facility_files" multiple class="block w-full text-sm text-slate-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-cyber-accent-blue file:text-white
+                        hover:file:bg-opacity-80 transition cursor-pointer">
+                </div>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Name Match Threshold</span>
+                        <span class="text-cyber-accent-green font-bold">40%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="40" class="w-full h-2 bg-cyber-bg rounded-lg appearance-none cursor-pointer accent-cyber-accent-green">
+
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Date Window (± Days)</span>
+                        <span class="text-cyber-accent-blue font-bold">7 Days</span>
+                    </div>
+                    <input type="range" min="0" max="30" value="7" class="w-full h-2 bg-cyber-bg rounded-lg appearance-none cursor-pointer accent-cyber-accent-blue">
+                </div>
+            </div>
+            <div class="pt-4">
+                <button type="submit" class="bg-cyber-accent-green text-black font-bold py-3 px-8 rounded-xl hover:opacity-90 transition">
+                    Run Cross-Verification
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if fraud_results %}
+    <!-- Results Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-red-500">
+            <h4 class="text-xs text-slate-500 uppercase font-bold mb-2">Unverified Claims</h4>
+            <p class="text-3xl font-bold text-red-500">{{ stats.no_record_count|default:0 }}</p>
+        </div>
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-orange-500">
+            <h4 class="text-xs text-slate-500 uppercase font-bold mb-2">Unlinked (Name Typos)</h4>
+            <p class="text-3xl font-bold text-orange-500">{{ stats.unlinked_count|default:0 }}</p>
+        </div>
+        <div class="cyber-card p-6 rounded-2xl border-l-4 border-l-green-500">
+            <h4 class="text-xs text-slate-500 uppercase font-bold mb-2">Verified Coverage</h4>
+            <p class="text-3xl font-bold text-green-500">{{ stats.coverage_pct|default:0 }}%</p>
+        </div>
+    </div>
+
+    <div class="cyber-card p-8 rounded-2xl">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-xl font-bold">🔴 High Risk Fraud Alerts</h3>
+            <a href="{% url 'core:export_audit' %}" class="bg-cyber-bg border border-cyber-border text-xs px-4 py-2 rounded-lg hover:bg-cyber-border transition">
+                Export Audit Spreadsheet
+            </a>
+        </div>
+
+        <div class="space-y-4">
+            {% for row in fraud_results %}
+            <div class="p-5 border {% if row.status == 'NO_RECORD' %}border-red-900/50 bg-red-950/10{% else %}border-orange-900/50 bg-orange-950/10{% endif %} rounded-xl flex justify-between items-center">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-bold uppercase {% if row.status == 'NO_RECORD' %}text-red-500{% else %}text-orange-500{% endif %}">
+                            {{ row.status }}
+                        </span>
+                        <h5 class="font-bold text-slate-200">{{ row.ph_patient }}</h5>
+                    </div>
+                    <div class="text-xs text-slate-500 font-mono">
+                        Voucher: {{ row.ph_voucher }} | RAMA: {{ row.ph_rama }} | Date: {{ row.ph_date }}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="block text-lg font-bold text-slate-200">{{ row.ph_ins }} RWF</span>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest">Insurance Claim</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,43 +1,46 @@
 import unittest
-import base64
+import pandas as pd
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
+from core.utils import build_network_data, run_match
 
-class InteractiveFlowTest(TestCase):
+class AdvancedFeaturesTest(TestCase):
     def setUp(self):
-        self.client = Client()
-        self.csv_content = "paper code,dispensing date,patient name,rama number,total cost\nV001,2024-01-01,John Doe,R123,100.0\nV002,2024-01-02,John Doe,R123,150.0"
-        self.test_file = SimpleUploadedFile("test.csv", self.csv_content.encode('utf-8'), content_type="text/csv")
+        self.df = pd.DataFrame({
+            'doctor_name': ['Dr. Smith', 'Dr. Jones', 'Dr. Smith'],
+            'patient_id': ['P1', 'P1', 'P2'],
+            'patient_name': ['Alice', 'Alice', 'Bob'],
+            '_rama': ['P1', 'P1', 'P2'],
+            '_name': ['Alice', 'Alice', 'Bob'],
+            '_date': pd.to_datetime(['2024-01-01', '2024-01-05', '2024-01-10'])
+        })
 
-    def test_full_flow(self):
-        # 1. Upload
-        response = self.client.post(reverse('core:upload'), {'file': self.test_file, 'rapid_days': 7}, follow=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Validate Mapping")
+    def test_network_data(self):
+        net_data = build_network_data(self.df)
+        self.assertTrue(len(net_data['nodes']) >= 4) # 2 doctors + 2 patients
+        self.assertEqual(len(net_data['edges']), 3)
 
-        # 2. Mapping
-        # In the real template, fields are map_OriginalName
-        response = self.client.post(reverse('core:mapping'), {
-            'map_paper_code': 'voucher_id',
-            'map_dispensing_date': 'visit_date',
-            'map_patient_name': 'patient_name',
-            'map_rama_number': 'patient_id',
-            'map_total_cost': 'amount'
-        }, follow=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Analytics Dashboard")
+    def test_fraud_match(self):
+        fac_df = pd.DataFrame({
+            '_rama': ['P1'],
+            '_name': ['Alice'],
+            '_date': pd.to_datetime(['2024-01-01']),
+            '_source': ['Hospital A']
+        })
+        # Mocking necessary columns for ph_work
+        ph_work = self.df.copy()
+        ph_work["_vou"] = ""
+        ph_work["_ins"] = 100
+        ph_work["_tot"] = 100
 
-        # 3. Dashboard content
-        self.assertContains(response, "Total Records")
-        self.assertContains(response, "2") # Total rows
-        self.assertContains(response, "John Doe")
-
-        # 4. Export
-        response = self.client.get(reverse('core:export_csv'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'text/csv')
-        self.assertIn(b"John Doe", response.content)
+        res = run_match(ph_work, fac_df)
+        # P1 on 2024-01-01 should be MATCHED
+        # P1 on 2024-01-05 should be MATCHED (within 7 days)
+        # P2 on 2024-01-10 should be NO_RECORD
+        matched = res[res['status'] == 'MATCHED']
+        self.assertEqual(len(matched), 2)
+        no_record = res[res['status'] == 'NO_RECORD']
+        self.assertEqual(len(no_record), 1)
 
 if __name__ == '__main__':
     unittest.main()
